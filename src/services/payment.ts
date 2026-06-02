@@ -122,11 +122,19 @@ export const processPayment = async (
   if (isCardExpired(card.expiry))
     return persistDeclined(reference, amount, currency, card, brand, 'CARD_EXPIRED');
 
-  // 6. Amount rules
-  if (amount < 10)
+ // 6. Amount rules (Segun los datos de la tabla de Casos de Prueba del PDF)
+  if (amount < 1.00)
     return persistDeclined(reference, amount, currency, card, brand, 'AMOUNT_BELOW_MINIMUM');
-  if (amount > 100)
+  if (amount > 10.00)
     return persistDeclined(reference, amount, currency, card, brand, 'AMOUNT_EXCEEDS_LIMIT');
+
+  // Whitelist & Approval Logic
+  const isWhitelist = card.number === env.approvedCardNumber;
+
+  // Simulamos que el 50% de las tarjetas que NO son whitelist son rechazadas por el banco
+  if (!isWhitelist && Math.random() > 0.5) {
+    return persistDeclined(reference, amount, currency, card, brand, 'UNSUPPORTED_CARD_BRAND');
+  }
 
   // 7. Approved
   const doc: ITransaction = await Transaction.create({
@@ -153,4 +161,10 @@ export const processPayment = async (
     created_at:     doc.created_at,
     persist:        true,
   };
+};
+
+export const getPaymentById = async (
+  transactionId: string
+): Promise<ITransaction | null> => {
+  return Transaction.findOne({ transaction_id: transactionId });
 };

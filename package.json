@@ -4,11 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-  "dev":   "nodemon",
-  "build": "tsc",
-  "start": "node dist/server.js",
-  "test":  "jest --forceExit"
-},
+    "dev": "nodemon",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "test": "jest --forceExit"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -17,6 +17,7 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.5.2",
     "express-validator": "^7.3.2",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.6.3",
@@ -25,6 +26,7 @@
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
+    "@types/express-rate-limit": "^6.0.2",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/mongoose": "^5.11.97",
     "@types/node": "^25.9.1",

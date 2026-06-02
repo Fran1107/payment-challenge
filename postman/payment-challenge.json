@@ -1,0 +1,793 @@
+{
+    "info": {
+        "name": "Payment Challenge API",
+        "description": "Colección completa para el Backend Technical Challenge — Payment Flow API",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:3000"
+        },
+        {
+            "key": "token",
+            "value": ""
+        },
+        {
+            "key": "transaction_id",
+            "value": ""
+        }
+    ],
+    "item": [
+        {
+            "name": "🔐 Auth",
+            "item": [
+                {
+                    "name": "01 - Obtener token (credenciales válidas)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Tiene access_token', () => {",
+                                    "  const body = pm.response.json();",
+                                    "  pm.expect(body.access_token).to.be.a('string');",
+                                    "  pm.expect(body.token_type).to.eql('Bearer');",
+                                    "  pm.collectionVariables.set('token', body.access_token);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/auth/token",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"client_id\": \"payment_client\",\n  \"client_secret\": \"s3cr3t_key\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "02 - Token con credenciales inválidas → 401",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 401', () => pm.response.to.have.status(401));",
+                                    "pm.test('Error UNAUTHORIZED', () => {",
+                                    "  pm.expect(pm.response.json().error).to.eql('UNAUTHORIZED');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/auth/token",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"client_id\": \"wrong_client\",\n  \"client_secret\": \"wrong_secret\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "03 - Token con body incompleto → 400",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                                    "pm.test('Error VALIDATION_ERROR', () => {",
+                                    "  pm.expect(pm.response.json().error).to.eql('VALIDATION_ERROR');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/auth/token",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"client_id\": \"payment_client\"\n}"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "💳 Payments — Casos exitosos",
+            "item": [
+                {
+                    "name": "04 - Pago aprobado whitelist $50.00",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('approved', () => {",
+                                    "  const b = pm.response.json();",
+                                    "  pm.expect(b.status).to.eql('approved');",
+                                    "  pm.expect(b.card_brand).to.eql('visa');",
+                                    "  pm.expect(b.transaction_id).to.be.a('string');",
+                                    "  pm.collectionVariables.set('transaction_id', b.transaction_id);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/payments/charge",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference\": \"REF-APPROVED-001\",\n  \"amount\": 50.00,\n  \"card\": {\n    \"number\": \"4111111111111111\",\n    \"holder\": \"TEST USER\",\n    \"expiry\": \"12/29\",\n    \"cvv\": \"123\"\n  },\n  \"currency\": \"USD\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "05 - Pago aprobado borde mínimo $10.00",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('approved en borde mínimo', () => {",
+                                    "  pm.expect(pm.response.json().status).to.eql('approved');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/payments/charge",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference\": \"REF-MIN-BORDER\",\n  \"amount\": 10.00,\n  \"card\": {\n    \"number\": \"4111111111111111\",\n    \"holder\": \"TEST USER\",\n    \"expiry\": \"12/29\",\n    \"cvv\": \"123\"\n  },\n  \"currency\": \"USD\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "06 - Pago aprobado borde máximo $100.00",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('approved en borde máximo', () => {",
+                                    "  pm.expect(pm.response.json().status).to.eql('approved');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/payments/charge",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference\": \"REF-MAX-BORDER\",\n  \"amount\": 100.00,\n  \"card\": {\n    \"number\": \"4111111111111111\",\n    \"holder\": \"TEST USER\",\n    \"expiry\": \"12/29\",\n    \"cvv\": \"123\"\n  },\n  \"currency\": \"USD\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "07 - Pago Mastercard válida $50.00",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('card_brand es mastercard', () => {",
+                                    "  pm.expect(pm.response.json().card_brand).to.eql('mastercard');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/payments/charge",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference\": \"REF-MC-001\",\n  \"amount\": 50.00,\n  \"card\": {\n    \"number\": \"5500005555555559\",\n    \"holder\": \"JOHN DOE\",\n    \"expiry\": \"12/29\",\n    \"cvv\": \"123\"\n  },\n  \"currency\": \"USD\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "08 - Pago Amex válida $50.00 (CVV 4 dígitos)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('card_brand es amex', () => {",
+                                    "  pm.expect(pm.response.json().card_brand).to.eql('amex');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/payments/charge",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference\": \"REF-AMEX-001\",\n  \"amount\": 50.00,\n  \"card\": {\n    \"number\": \"378282246310005\",\n    \"holder\": \"JOHN DOE\",\n    \"expiry\": \"12/29\",\n    \"cvv\": \"1234\"\n  },\n  \"currency\": \"USD\"\n}"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "❌ Payments — Declinados por monto",
+            "item": [
+                {
+                    "name": "09 - Monto bajo mínimo $0.99 → AMOUNT_BELOW_MINIMUM",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('declined AMOUNT_BELOW_MINIMUM', () => {",
+                                    "  const b = pm.response.json();",
+                                    "  pm.expect(b.status).to.eql('declined');",
+                                    "  pm.expect(b.decline_reason).to.eql('AMOUNT_BELOW_MINIMUM');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/payments/charge",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference\": \"REF-LOW-AMT\",\n  \"amount\": 0.99,\n  \"card\": {\n    \"number\": \"4111111111111111\",\n    \"holder\": \"TEST USER\",\n    \"expiry\": \"12/29\",\n    \"cvv\": \"123\"\n  },\n  \"currency\": \"USD\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "10 - Monto sobre límite $100.01 → AMOUNT_EXCEEDS_LIMIT",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('declined AMOUNT_EXCEEDS_LIMIT', () => {",
+                                    "  const b = pm.response.json();",
+                                    "  pm.expect(b.status).to.eql('declined');",
+                                    "  pm.expect(b.decline_reason).to.eql('AMOUNT_EXCEEDS_LIMIT');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/payments/charge",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference\": \"REF-HIGH-AMT\",\n  \"amount\": 100.01,\n  \"card\": {\n    \"number\": \"4111111111111111\",\n    \"holder\": \"TEST USER\",\n    \"expiry\": \"12/29\",\n    \"cvv\": \"123\"\n  },\n  \"currency\": \"USD\"\n}"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "❌ Payments — Declinados por tarjeta",
+            "item": [
+                {
+                    "name": "11 - Tarjeta vencida → CARD_EXPIRED",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('declined CARD_EXPIRED', () => {",
+                                    "  pm.expect(pm.response.json().decline_reason).to.eql('CARD_EXPIRED');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/payments/charge",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference\": \"REF-EXPIRED\",\n  \"amount\": 50.00,\n  \"card\": {\n    \"number\": \"4111111111111111\",\n    \"holder\": \"TEST USER\",\n    \"expiry\": \"04/26\",\n    \"cvv\": \"123\"\n  },\n  \"currency\": \"USD\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "12 - PAN longitud inválida → INVALID_CARD_NUMBER",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('declined INVALID_CARD_NUMBER', () => {",
+                                    "  pm.expect(pm.response.json().decline_reason).to.eql('INVALID_CARD_NUMBER');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/payments/charge",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference\": \"REF-INVALID-PAN\",\n  \"amount\": 50.00,\n  \"card\": {\n    \"number\": \"41111111111\",\n    \"holder\": \"TEST USER\",\n    \"expiry\": \"12/29\",\n    \"cvv\": \"123\"\n  },\n  \"currency\": \"USD\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "13 - Brand no soportada Discover → UNSUPPORTED_CARD_BRAND",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('declined UNSUPPORTED_CARD_BRAND', () => {",
+                                    "  pm.expect(pm.response.json().decline_reason).to.eql('UNSUPPORTED_CARD_BRAND');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/payments/charge",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference\": \"REF-DISCOVER\",\n  \"amount\": 50.00,\n  \"card\": {\n    \"number\": \"6011000990139424\",\n    \"holder\": \"JOHN DOE\",\n    \"expiry\": \"12/29\",\n    \"cvv\": \"123\"\n  },\n  \"currency\": \"USD\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "14 - Referencia duplicada → DUPLICATE_REFERENCE",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('declined DUPLICATE_REFERENCE', () => {",
+                                    "  pm.expect(pm.response.json().decline_reason).to.eql('DUPLICATE_REFERENCE');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/payments/charge",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference\": \"REF-APPROVED-001\",\n  \"amount\": 50.00,\n  \"card\": {\n    \"number\": \"4111111111111111\",\n    \"holder\": \"TEST USER\",\n    \"expiry\": \"12/29\",\n    \"cvv\": \"123\"\n  },\n  \"currency\": \"USD\"\n}"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "🚫 Payments — Errores de validación (400)",
+            "item": [
+                {
+                    "name": "15 - CVV inválido Visa 4 dígitos → 400",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                                    "pm.test('VALIDATION_ERROR', () => {",
+                                    "  pm.expect(pm.response.json().error).to.eql('VALIDATION_ERROR');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/payments/charge",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference\": \"REF-BAD-CVV\",\n  \"amount\": 50.00,\n  \"card\": {\n    \"number\": \"4111111111111111\",\n    \"holder\": \"TEST USER\",\n    \"expiry\": \"12/29\",\n    \"cvv\": \"1234\"\n  },\n  \"currency\": \"USD\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "16 - Reference muy corta (<6 chars) → 400",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/payments/charge",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference\": \"REF\",\n  \"amount\": 50.00,\n  \"card\": {\n    \"number\": \"4111111111111111\",\n    \"holder\": \"TEST USER\",\n    \"expiry\": \"12/29\",\n    \"cvv\": \"123\"\n  }\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "17 - Expiry formato inválido → 400",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/payments/charge",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference\": \"REF-BAD-EXP\",\n  \"amount\": 50.00,\n  \"card\": {\n    \"number\": \"4111111111111111\",\n    \"holder\": \"TEST USER\",\n    \"expiry\": \"2029-12\",\n    \"cvv\": \"123\"\n  }\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "18 - Amount negativo → 400",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/payments/charge",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference\": \"REF-NEG-AMT\",\n  \"amount\": -10.00,\n  \"card\": {\n    \"number\": \"4111111111111111\",\n    \"holder\": \"TEST USER\",\n    \"expiry\": \"12/29\",\n    \"cvv\": \"123\"\n  }\n}"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "🔒 Payments — Auth errors",
+            "item": [
+                {
+                    "name": "19 - Sin token → 401",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 401', () => pm.response.to.have.status(401));",
+                                    "pm.test('UNAUTHORIZED', () => {",
+                                    "  pm.expect(pm.response.json().error).to.eql('UNAUTHORIZED');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/payments/charge",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference\": \"REF-NO-AUTH\",\n  \"amount\": 50.00,\n  \"card\": {\n    \"number\": \"4111111111111111\",\n    \"holder\": \"TEST USER\",\n    \"expiry\": \"12/29\",\n    \"cvv\": \"123\"\n  }\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "20 - Token malformado → 401",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{base_url}}/payments/charge",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer token.invalido.aqui"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference\": \"REF-BAD-TOK\",\n  \"amount\": 50.00,\n  \"card\": {\n    \"number\": \"4111111111111111\",\n    \"holder\": \"TEST USER\",\n    \"expiry\": \"12/29\",\n    \"cvv\": \"123\"\n  }\n}"
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "🔍 GET /payments/:transaction_id",
+            "item": [
+                {
+                    "name": "21 - Consultar transacción existente",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Retorna los campos correctos', () => {",
+                                    "  const b = pm.response.json();",
+                                    "  pm.expect(b.transaction_id).to.be.a('string');",
+                                    "  pm.expect(b.status).to.be.oneOf(['approved', 'declined']);",
+                                    "  pm.expect(b.card_number).to.match(/^\\d{6} \\*{4} \\d{4}$/);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": "{{base_url}}/payments/{{transaction_id}}",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "22 - Consultar transacción inexistente → 404",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 404', () => pm.response.to.have.status(404));",
+                                    "pm.test('NOT_FOUND', () => {",
+                                    "  pm.expect(pm.response.json().error).to.eql('NOT_FOUND');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": "{{base_url}}/payments/00000000-0000-0000-0000-000000000000",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "23 - Consultar sin token → 401",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": "{{base_url}}/payments/{{transaction_id}}"
+                    }
+                }
+            ]
+        }
+    ]
+}

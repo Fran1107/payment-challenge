@@ -19,4 +19,4 @@ export const authMiddleware = (
   } catch {
     res.status(401).json({ error: 'UNAUTHORIZED' });
   }
-};
+}

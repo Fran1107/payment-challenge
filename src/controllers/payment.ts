@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { processPayment } from '../services/payment';
+import { getPaginatedPayments, processPayment } from '../services/payment';
 import { ChargeRequestBody } from '../types';
 import { getPaymentById } from '../services/payment';
 
@@ -31,7 +31,7 @@ export const charge = async (
     console.error(err);
     res.status(500).json({ error: 'INTERNAL_ERROR' });
   }
-};
+}
 
 export const getPayment = async (
   req: Request<{ transaction_id: string }>,
@@ -61,3 +61,36 @@ export const getPayment = async (
     res.status(500).json({ error: 'INTERNAL_ERROR' });
   }
 };
+
+export const listPayments = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    // Leemos page y limit de la URL, con valores por defecto 1 y 10
+    const page = parseInt(req.query.page as string, 10) || 1;
+    const limit = parseInt(req.query.limit as string, 10) || 10;
+
+    const { data, total } = await getPaginatedPayments(page, limit);
+
+    res.status(200).json({
+      data: data.map(doc => ({
+        transaction_id: doc.transaction_id,
+        reference: doc.reference,
+        status: doc.status,
+        amount: doc.amount,
+        currency: doc.currency,
+        created_at: doc.created_at
+      })),
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'INTERNAL_ERROR' });
+  }
+}

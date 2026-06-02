@@ -86,3 +86,14 @@ export interface EnvConfig {
   approvedCardNumber: string;
   mongoUri: string;
 }
+
+// ── Pagination ────────────────────────────────────────
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}

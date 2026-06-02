@@ -12,6 +12,6 @@ const transactionSchema = new Schema<ITransaction>({
   card_number:    { type: String, required: true },
   card_holder:    { type: String, required: true },
   created_at:     { type: Date, default: Date.now },
-});
+})
 
 export const Transaction = model<ITransaction>('Transaction', transactionSchema);

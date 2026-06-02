@@ -167,4 +167,19 @@ export const getPaymentById = async (
   transactionId: string
 ): Promise<ITransaction | null> => {
   return Transaction.findOne({ transaction_id: transactionId });
-};
+}
+
+export const getPaginatedPayments = async (
+  page: number,
+  limit: number
+): Promise<{ data: ITransaction[]; total: number }> => {
+  const skip = (page - 1) * limit;
+  
+  // Ejecuta ambas consultas en paralelo para mayor rendimiento
+  const [data, total] = await Promise.all([
+    Transaction.find().sort({ created_at: -1 }).skip(skip).limit(limit),
+    Transaction.countDocuments(),
+  ]);
+
+  return { data, total };
+}

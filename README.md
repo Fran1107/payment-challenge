@@ -35,12 +35,12 @@ API RESTful desarrollada en Node.js y TypeScript que simula un flujo de procesam
 ## Variables de Entorno Requeridas (.env)
 \`\`\`env
 PORT=3000
-MONGODB_URI=mongodb://127.0.0.1:27017/payment_challenge
-JWT_SECRET=super_secret_jwt_key
+MONGODB_URI=
+JWT_SECRET=
 TOKEN_EXPIRY_SECONDS=3600
-VALID_CLIENT_ID=payment_client
-VALID_CLIENT_SECRET=s3cr3t_key
-APPROVED_CARD_NUMBER=4111111111111111
+VALID_CLIENT_ID=
+VALID_CLIENT_SECRET=
+APPROVED_CARD_NUMBER=
 \`\`\`
 
 ## Decisiones de Diseño Técnico
